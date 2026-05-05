@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>静读 - 舒适阅读器</title>
+    <style>
+        :root {
+            --bg: #faf6f0;
+            --bg-warm: #f5efe4;
+            --text: #3d3629;
+            --text-light: #6b5e4f;
+            --accent: #8b7355;
+            --accent-soft: #c4a882;
+            --control-bg: #f0e8d8;
+            --control-border: #e0d5c0;
+            --shadow-soft: 0 2px 16px rgba(60, 40, 20, 0.06);
+            --shadow-card: 0 8px 40px rgba(60, 40, 20, 0.10);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+            --font-size: 19px;
+            --line-height: 1.85;
+            --content-width: 680px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f0ebe0;
+            color: var(--text);
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ============ 主容器 ============ */
+        #app {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            background: radial-gradient(ellipse at center, #f7f2e8 0%, #ede4d4 100%);
+        }
+
+        /* ============ 输入视图 ============ */
+        #input-view {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            transition: opacity var(--transition), transform var(--transition), visibility var(--transition);
+            opacity: 1;
+            transform: scale(1);
+            visibility: visible;
+            z-index: 2;
+        }
+        #input-view.hidden {
+            opacity: 0;
+            transform: scale(0.96);
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .input-card {
+            background: #fffdf8;
+            border-radius: 20px;
+            box-shadow: var(--shadow-card);
+            padding: 40px 36px 32px;
+            width: 100%;
+            max-width: 620px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            border: 1px solid rgba(180, 160, 130, 0.15);
+            transition: box-shadow 0.5s ease;
+        }
+        .input-card:focus-within {
+            box-shadow: 0 12px 48px rgba(60, 40, 20, 0.15), 0 0 0 3px rgba(180, 150, 110, 0.2);
+        }
+
+        .input-header {
+            text-align: center;
+        }
+        .input-icon {
+            font-size: 40px;
+            margin-bottom: 6px;
+            display: block;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+        .input-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #4a3828;
+            letter-spacing: 0.04em;
+            margin: 0;
+        }
+        .input-subtitle {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-top: 4px;
+            letter-spacing: 0.03em;
+            font-weight: 400;
+        }
+
+        .textarea-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        #text-input {
+            width: 100%;
+            min-height: 220px;
+            max-height: 420px;
+            border: 2px solid #e8ddd0;
+            border-radius: var(--radius-sm);
+            padding: 18px 20px;
+            font-size: 16px;
+            font-family: inherit;
+            line-height: 1.7;
+            color: var(--text);
+            background: #fefcf8;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            letter-spacing: 0.02em;
+        }
+        #text-input:focus {
+            border-color: var(--accent-soft);
+            box-shadow: 0 0 0 4px rgba(180, 150, 110, 0.08);
+        }
+        #text-input::placeholder {
+            color: #c4b8a5;
+            letter-spacing: 0.03em;
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 13px 28px;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            border: none;
+            transition: all 0.25s ease;
+            font-family: inherit;
+            white-space: nowrap;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-primary {
+            background: #5c4a32;
+            color: #fdf7ed;
+            box-shadow: 0 4px 14px rgba(80, 50, 25, 0.25);
+        }
+        .btn-primary:hover {
+            background: #4a3824;
+            box-shadow: 0 6px 20px rgba(80, 50, 25, 0.35);
+            transform: translateY(-1px);
+        }
+        .btn-primary:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 8px rgba(80, 50, 25, 0.3);
+            transition: all 0.1s ease;
+        }
+        .btn-secondary {
+            background: transparent;
+            color: #6b5e4f;
+            border: 2px solid #d8cfc0;
+        }
+        .btn-secondary:hover {
+            background: #f5efe4;
+            border-color: #c4b098;
+        }
+        .btn-icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        /* ============ 阅读视图 ============ */
+        #reading-view {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            transition: opacity var(--transition), transform var(--transition), visibility var(--transition);
+            opacity: 0;
+            transform: translateY(20px);
+            visibility: hidden;
+            pointer-events: none;
+            z-index: 1;
+            background: var(--bg);
+        }
+        #reading-view.active {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+            pointer-events: auto;
+            z-index: 3;
+        }
+
+        /* 顶部栏 */
+        .reading-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 18px;
+            background: rgba(250, 246, 240, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(180, 155, 125, 0.2);
+            flex-shrink: 0;
+            z-index: 5;
+            min-height: 50px;
+        }
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: #6b5e4f;
+            letter-spacing: 0.03em;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-back:hover {
+            background: rgba(180, 150, 120, 0.12);
+            color: #4a3828;
+        }
+        .btn-back:active {
+            transform: scale(0.95);
+        }
+        .topbar-title {
+            font-size: 13px;
+            color: #a09080;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .topbar-spacer {
+            width: 70px;
+        }
+
+        /* 阅读内容区 */
+        .reading-content-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scroll-behavior: auto;
+            padding: 30px 20px 40px;
+            display: flex;
+            justify-content: center;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(180, 150, 120, 0.3) transparent;
+        }
+        .reading-content-wrapper::-webkit-scrollbar {
+            width: 5px;
+        }
+        .reading-content-wrapper::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .reading-content-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(180, 150, 120, 0.35);
+            border-radius: 10px;
+        }
+        .reading-content-wrapper::-webkit-scrollbar-thumb:hover {
+            background: rgba(150, 120, 90, 0.5);
+        }
+
+        .reading-content {
+            width: 100%;
+            max-width: var(--content-width);
+            font-size: var(--font-size);
+            line-height: var(--line-height);
+            letter-spacing: 0.025em;
+            color: var(--text);
+            word-break: break-word;
+            text-align: justify;
+            hyphens: auto;
+            padding-bottom: 20px;
+        }
+        .reading-content p {
+            margin-bottom: 1.1em;
+            text-indent: 2em;
+        }
+        .reading-content p:first-child {
+            text-indent: 0;
+        }
+
+        /* 进度条 */
+        .progress-bar-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: transparent;
+            z-index: 6;
+            pointer-events: none;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #c4a882, #a08060);
+            border-radius: 0 2px 2px 0;
+            transition: width 0.15s linear;
+            width: 0%;
+            opacity: 0.7;
+        }
+
+        /* 底部控制栏 */
+        .reading-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 14px 18px 18px;
+            background: var(--control-bg);
+            border-top: 1px solid var(--control-border);
+            flex-shrink: 0;
+            z-index: 5;
+            flex-wrap: wrap;
+            box-shadow: 0 -2px 16px rgba(60, 40, 20, 0.04);
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-control {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 2px solid #d8cfc0;
+            background: #fdf9f2;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            color: #5c4a32;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            flex-shrink: 0;
+        }
+        .btn-control:hover {
+            background: #f0e6d6;
+            border-color: #c4b098;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(60, 40, 20, 0.1);
+        }
+        .btn-control:active {
+            transform: scale(0.92);
+            transition: all 0.08s ease;
+        }
+        .btn-play {
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            background: #5c4a32;
+            color: #fdf7ed;
+            border: none;
+            box-shadow: 0 4px 16px rgba(80, 50, 25, 0.3);
+            position: relative;
+        }
+        .btn-play:hover {
+            background: #4a3824;
+            box-shadow: 0 6px 22px rgba(80, 50, 25, 0.4);
+            transform: translateY(-2px);
+        }
+        .btn-play.playing {
+            background: #7a5c3e;
+            animation: pulse-play 2s ease-in-out infinite;
+        }
+        @keyframes pulse-play {
+            0%,
+            100% {
+                box-shadow: 0 4px 16px rgba(80, 50, 25, 0.3);
+            }
+            50% {
+                box-shadow: 0 4px 24px rgba(80, 50, 25, 0.5), 0 0 0 8px rgba(180, 140, 100, 0.1);
+            }
+        }
+        .btn-play svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        /* 速度滑块 */
+        .speed-slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fdf9f2;
+            border-radius: 50px;
+            padding: 8px 16px;
+            border: 2px solid #e0d5c0;
+            flex-shrink: 0;
+        }
+        .speed-label {
+            font-size: 12px;
+            color: #8b7b68;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+            font-weight: 500;
+            min-width: 18px;
+            text-align: center;
+        }
+        .speed-icon {
+            font-size: 15px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .speed-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100px;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #d8cfc0, #a08060);
+            outline: none;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.2s ease;
+        }
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #fffdf8;
+            border: 2px solid #8b7355;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(60, 40, 20, 0.2);
+            transition: all 0.2s ease;
+        }
+        .speed-slider::-webkit-slider-thumb:hover {
+            border-color: #5c4a32;
+            box-shadow: 0 4px 14px rgba(60, 40, 20, 0.3);
+            transform: scale(1.05);
+        }
+        .speed-slider::-webkit-slider-thumb:active {
+            transform: scale(0.9);
+            box-shadow: 0 1px 4px rgba(60, 40, 20, 0.3);
+        }
+        .speed-slider::-moz-range-thumb {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #fffdf8;
+            border: 2px solid #8b7355;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(60, 40, 20, 0.2);
+        }
+        .speed-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #5c4a32;
+            min-width: 36px;
+            text-align: center;
+            letter-spacing: 0.03em;
+        }
+
+        /* 字号按钮 */
+        .fontsize-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: #fdf9f2;
+            border-radius: 50px;
+            padding: 4px 6px;
+            border: 2px solid #e0d5c0;
+            flex-shrink: 0;
+        }
+        .btn-fontsize {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #5c4a32;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-fontsize:hover {
+            background: #f0e6d6;
+        }
+        .btn-fontsize:active {
+            transform: scale(0.9);
+        }
+        .fontsize-display {
+            font-size: 12px;
+            color: #8b7b68;
+            min-width: 28px;
+            text-align: center;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .input-card {
+                padding: 28px 20px 24px;
+                border-radius: 16px;
+                gap: 16px;
+            }
+            .input-title {
+                font-size: 22px;
+            }
+            #text-input {
+                min-height: 180px;
+                max-height: 300px;
+                font-size: 15px;
+                padding: 14px 16px;
+            }
+            .reading-content-wrapper {
+                padding: 20px 16px 30px;
+            }
+            .reading-content {
+                font-size: calc(var(--font-size) - 1px);
+                max-width: 100%;
+            }
+            .reading-controls {
+                gap: 10px;
+                padding: 10px 12px 14px;
+            }
+            .speed-slider {
+                width: 70px;
+            }
+            .speed-slider-group {
+                padding: 6px 12px;
+                gap: 6px;
+            }
+            .btn-control {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+            .btn-play {
+                width: 44px;
+                height: 44px;
+            }
+            .btn-play svg {
+                width: 18px;
+                height: 18px;
+            }
+            .btn-fontsize {
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+            }
+            .topbar-spacer {
+                width: 40px;
+            }
+            .reading-topbar {
+                padding: 8px 12px;
+                min-height: 44px;
+            }
+            .btn-back {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+        }
+        @media (max-width: 480px) {
+            .input-card {
+                padding: 22px 16px 20px;
+                border-radius: 14px;
+            }
+            .input-title {
+                font-size: 20px;
+            }
+            .input-icon {
+                font-size: 32px;
+            }
+            #text-input {
+                min-height: 150px;
+                max-height: 240px;
+                font-size: 14px;
+            }
+            .btn {
+                padding: 11px 22px;
+                font-size: 14px;
+            }
+            .reading-content {
+                font-size: calc(var(--font-size) - 2px);
+                text-align: left;
+                letter-spacing: 0.02em;
+            }
+            .reading-content p {
+                text-indent: 1.5em;
+            }
+            .reading-controls {
+                gap: 6px;
+                padding: 8px 8px 12px;
+            }
+            .speed-slider-group {
+                padding: 5px 10px;
+                gap: 4px;
+            }
+            .speed-slider {
+                width: 55px;
+                height: 5px;
+            }
+            .speed-slider::-webkit-slider-thumb {
+                width: 22px;
+                height: 22px;
+            }
+            .speed-slider::-moz-range-thumb {
+                width: 22px;
+                height: 22px;
+            }
+            .btn-control {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+            .btn-play {
+                width: 40px;
+                height: 40px;
+            }
+            .btn-play svg {
+                width: 16px;
+                height: 16px;
+            }
+            .fontsize-group {
+                padding: 3px 4px;
+            }
+            .btn-fontsize {
+                width: 28px;
+                height: 28px;
+                font-size: 13px;
+            }
+            .speed-value {
+                font-size: 11px;
+                min-width: 28px;
+            }
+            .topbar-spacer {
+                width: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- ========== 输入视图 ========== -->
+        <div id="input-view">
+            <div class="input-card">
+                <div class="input-header">
+                    <span class="input-icon">📖</span>
+                    <h1 class="input-title">静 读</h1>
+                    <p class="input-subtitle">粘贴文本，享受舒适的阅读体验</p>
+                </div>
+                <div class="textarea-wrapper">
+                    <textarea
+                    id="text-input"
+                    placeholder="在此粘贴或输入您想阅读的文本内容……&#10;&#10;支持长篇文字，按换行分段。&#10;确认后将进入沉浸式阅读模式。"
+                ></textarea>
+            </div>
+            <div class="input-actions">
+                <button class="btn btn-secondary" id="btn-sample" type="button">
+                    <span class="btn-icon">✨</span> 试用示例
+                </button>
+                <button class="btn btn-primary" id="btn-confirm" type="button">
+                    <span class="btn-icon">👁️</span> 开始阅读
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 阅读视图 ========== -->
+    <div id="reading-view">
+        <!-- 进度条 -->
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+        <!-- 顶部栏 -->
+        <div class="reading-topbar">
+            <button class="btn-back" id="btn-back" title="返回编辑 (Esc)">
+                ← 返回
+            </button>
+            <span class="topbar-title">阅读模式</span>
+            <span class="topbar-spacer"></span>
+        </div>
+        <!-- 阅读内容 -->
+        <div class="reading-content-wrapper" id="reading-scroll">
+            <div class="reading-content" id="reading-content"></div>
+        </div>
+        <!-- 底部控制栏 -->
+        <div class="reading-controls" id="reading-controls">
+            <!-- 字号 -->
+            <div class="fontsize-group">
+                <button class="btn-fontsize" id="btn-fs-minus" title="缩小字号">A−</button>
+                <span class="fontsize-display" id="fs-display">19px</span>
+                <button class="btn-fontsize" id="btn-fs-plus" title="放大字号">A+</button>
+            </div>
+            <!-- 播放/暂停 -->
+            <button class="btn-control btn-play" id="btn-play" title="播放/暂停自动滚动 (空格键)">
+                <!-- 播放图标 -->
+                <svg id="icon-play" viewBox="0 0 24 24" width="22" height="22">
+                    <polygon points="6,3 20,12 6,21" />
+                </svg>
+                <!-- 暂停图标 -->
+                <svg id="icon-pause" viewBox="0 0 24 24" width="22" height="22" style="display:none;">
+                    <rect x="5" y="3" width="5" height="18" rx="1" />
+                    <rect x="14" y="3" width="5" height="18" rx="1" />
+                </svg>
+            </button>
+            <!-- 速度滑块 -->
+            <div class="speed-slider-group">
+                <span class="speed-icon">🐢</span>
+                <input type="range" class="speed-slider" id="speed-slider" min="8" max="75" value="28" step="1" title="滚动速度">
+                <span class="speed-icon">🐇</span>
+                <span class="speed-value" id="speed-display">28 px/s</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ============ DOM 元素 ============
+        const inputView = document.getElementById('input-view');
+        const readingView = document.getElementById('reading-view');
+        const textInput = document.getElementById('text-input');
+        const btnConfirm = document.getElementById('btn-confirm');
+        const btnSample = document.getElementById('btn-sample');
+        const btnBack = document.getElementById('btn-back');
+        const readingContent = document.getElementById('reading-content');
+        const readingScroll = document.getElementById('reading-scroll');
+        const btnPlay = document.getElementById('btn-play');
+        const iconPlay = document.getElementById('icon-play');
+        const iconPause = document.getElementById('icon-pause');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedDisplay = document.getElementById('speed-display');
+        const progressFill = document.getElementById('progress-fill');
+        const btnFsMinus = document.getElementById('btn-fs-minus');
+        const btnFsPlus = document.getElementById('btn-fs-plus');
+        const fsDisplay = document.getElementById('fs-display');
+        const readingControls = document.getElementById('reading-controls');
+
+        // ============ 状态变量 ============
+        let currentFontSize = 19;
+        let scrollSpeed = parseInt(speedSlider.value); // px/s
+        let isPlaying = false;
+        let animationId = null;
+        let lastTimestamp = null;
+        let userManuallyScrolled = false;
+        let manualScrollTimeout = null;
+        let scrollAccumulator = 0; // 累积未滚动的像素
+
+        // ============ 示例文本 ============
+        const sampleText = `山居岁月
+
+清晨，第一缕阳光透过竹帘的缝隙，在木地板上画出一道道金色的条纹。我推开窗，山间的雾气还未完全散去，像一层薄纱覆盖着远处的松林。空气里带着泥土和青草的清香，深吸一口气，整个人都清醒了过来。
+
+这是在城市里永远感受不到的宁静。没有汽车的轰鸣，没有人群的嘈杂，只有风吹过树叶的沙沙声，和偶尔几声清脆的鸟鸣。我泡了一壶粗茶，坐在廊下的藤椅上，看着阳光一点点驱散晨雾，露出苍翠的山峦。
+
+有时候我会想，人为什么要活得那么匆忙？在城市里，每一天都像在赛跑，追赶着看不见的终点。而在这里，时间仿佛放慢了脚步，每一分钟都拉得很长很长，长到你可以细细品味一杯茶的滋味，静静看完一朵云的变幻。
+
+午后，我通常会带上一本书，走到屋后的小溪边。溪水从山上流下来，清澈见底，水底的鹅卵石被冲刷得光滑圆润。找一块平整的大石头坐下，把脚浸在冰凉的水里，翻开书页，任凭午后的阳光透过树叶洒在身上。读累了，就抬头看看天空，看看远处的山，什么也不想。
+
+有时候，一只松鼠会从树上跳下来，好奇地打量着我这个不速之客。我们对视几秒，它便飞快地窜回树上，消失在茂密的枝叶间。偶尔还能看到野兔在山坡上奔跑，白色的尾巴一闪一闪的。
+
+傍晚是最美的时刻。夕阳把整片山林染成金红色，天边的云彩像是被打翻的调色盘，绚烂得让人移不开眼睛。我会沿着屋后的小路走上山坡，坐在一块突出的岩石上，看着太阳缓缓沉入远山之后，看着暮色一点一点笼罩大地。
+
+夜幕降临后，山里的星空令人震撼。没有光污染的天空，银河清晰可见，密密麻麻的星星像是撒在黑色天鹅绒上的钻石。偶尔有一颗流星划过，来不及许愿，就已经消失在天际。萤火虫在草丛间飞舞，像一盏盏小小的灯笼，给夜晚增添了几分神秘和浪漫。
+
+有时候我会生一堆篝火，坐在火边，听着木柴燃烧的噼啪声，看着火星飞向夜空。这时候最适合发呆，或者想想那些平时没时间思考的问题。火光照在脸上，温暖而舒适，让人感到一种原始的安宁。
+
+山里的雨也很有韵味。雨点打在屋顶的瓦片上，发出清脆的响声。雨水顺着屋檐流下来，形成一道水帘。空气变得更加清新，泥土的芬芳更加浓郁。雨停后，山间常常会出现彩虹，横跨在两座山峰之间，美得不像是真的。
+
+我想，这就是生活本该有的样子。简单、宁静、与自然为伴。不需要太多的物质，不需要太多的社交，只需要一颗平静的心，和一双愿意发现美的眼睛。
+
+或许我们都应该偶尔放慢脚步，找一个这样的地方，让自己沉淀下来。在繁忙的生活中，给自己留一点空白，留一点独处的时间。因为在那些安静的时刻里，我们才能真正听到自己内心的声音。`;
+
+        // ============ 视图切换 ============
+        function switchToReading() {
+            const text = textInput.value.trim();
+            if (!text) {
+                textInput.focus();
+                textInput.style.borderColor = '#d4a08a';
+                textInput.style.boxShadow = '0 0 0 4px rgba(200,120,80,0.12)';
+                setTimeout(() => {
+                    textInput.style.borderColor = '#e8ddd0';
+                    textInput.style.boxShadow = 'none';
+                }, 600);
+                // 轻微晃动提示
+                textInput.style.animation = 'none';
+                textInput.offsetHeight;
+                textInput.style.animation = 'shake 0.5s ease';
+                return;
+            }
+            // 渲染文本
+            renderText(text);
+            // 重置滚动
+            readingScroll.scrollTop = 0;
+            scrollAccumulator = 0;
+            updateProgress();
+            // 停止自动滚动
+            stopAutoScroll();
+            // 切换视图
+            inputView.classList.add('hidden');
+            readingView.classList.add('active');
+            // 延迟聚焦阅读区
+            setTimeout(() => {
+                readingScroll.focus();
+            }, 500);
+            // 保存文本到sessionStorage
+            try {
+                sessionStorage.setItem('quietread_text', text);
+            } catch (e) { /* 忽略 */ }
+        }
+
+        function switchToInput() {
+            stopAutoScroll();
+            readingView.classList.remove('active');
+            inputView.classList.remove('hidden');
+            // 恢复输入框中的文本
+            try {
+                const saved = sessionStorage.getItem('quietread_text');
+                if (saved && textInput.value.trim() === '') {
+                    textInput.value = saved;
+                }
+            } catch (e) { /* 忽略 */ }
+            setTimeout(() => {
+                textInput.focus();
+            }, 400);
+        }
+
+        function renderText(text) {
+            // 按换行分割，过滤掉多余空行，但保留有意义的段落分隔
+            const lines = text.split(/\n/);
+            const paragraphs = [];
+            let currentParagraph = '';
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line === '') {
+                    if (currentParagraph.trim() !== '') {
+                        paragraphs.push(currentParagraph.trim());
+                        currentParagraph = '';
+                    }
+                } else {
+                    if (currentParagraph !== '') {
+                        currentParagraph += '\n' + line;
+                    } else {
+                        currentParagraph = line;
+                    }
+                }
+            }
+            if (currentParagraph.trim() !== '') {
+                paragraphs.push(currentParagraph.trim());
+            }
+
+            // 如果没有段落，整段显示
+            if (paragraphs.length === 0 && text.trim() !== '') {
+                paragraphs.push(text.trim());
+            }
+
+            // 渲染为HTML
+            const html = paragraphs.map(p => {
+                // 转义HTML
+                const escaped = p
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+                return `<p>${escaped}</p>`;
+            }).join('\n');
+
+            readingContent.innerHTML = html;
+        }
+
+        // ============ 自动滚动 ============
+        function startAutoScroll() {
+            if (isPlaying) return;
+            // 检查是否已到达底部
+            if (readingScroll.scrollTop >= readingScroll.scrollHeight - readingScroll.clientHeight - 2) {
+                // 已到底部，从头开始
+                readingScroll.scrollTop = 0;
+                scrollAccumulator = 0;
+                updateProgress();
+            }
+            isPlaying = true;
+            lastTimestamp = null;
+            scrollAccumulator = 0;
+            userManuallyScrolled = false;
+            updatePlayButton();
+            animationId = requestAnimationFrame(scrollStep);
+        }
+
+        function stopAutoScroll() {
+            isPlaying = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            lastTimestamp = null;
+            scrollAccumulator = 0;
+            updatePlayButton();
+        }
+
+        function toggleAutoScroll() {
+            if (isPlaying) {
+                stopAutoScroll();
+            } else {
+                startAutoScroll();
+            }
+        }
+
+        function scrollStep(timestamp) {
+            if (!isPlaying) {
+                animationId = null;
+                lastTimestamp = null;
+                return;
+            }
+
+            if (lastTimestamp === null) {
+                lastTimestamp = timestamp;
+                animationId = requestAnimationFrame(scrollStep);
+                return;
+            }
+
+            const deltaSeconds = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+
+            // 限制delta以避免大跳跃（例如标签页切换回来）
+            const clampedDelta = Math.min(deltaSeconds, 0.2);
+
+            const targetScroll = scrollAccumulator + scrollSpeed * clampedDelta;
+            const wholePixels = Math.floor(targetScroll);
+            scrollAccumulator = targetScroll - wholePixels;
+
+            if (wholePixels > 0) {
+                const maxScroll = readingScroll.scrollHeight - readingScroll.clientHeight;
+                const newScrollTop = Math.min(readingScroll.scrollTop + wholePixels, maxScroll);
+                readingScroll.scrollTop = newScrollTop;
+                updateProgress();
+
+                // 到达底部则停止
+                if (newScrollTop >= maxScroll - 1) {
+                    readingScroll.scrollTop = maxScroll;
+                    updateProgress();
+                    stopAutoScroll();
+                    return;
+                }
+            }
+
+            animationId = requestAnimationFrame(scrollStep);
+        }
+
+        function updatePlayButton() {
+            if (isPlaying) {
+                iconPlay.style.display = 'none';
+                iconPause.style.display = 'block';
+                btnPlay.classList.add('playing');
+                btnPlay.setAttribute('title', '暂停自动滚动 (空格键)');
+            } else {
+                iconPlay.style.display = 'block';
+                iconPause.style.display = 'none';
+                btnPlay.classList.remove('playing');
+                btnPlay.setAttribute('title', '开始自动滚动 (空格键)');
+            }
+        }
+
+        function updateProgress() {
+            const maxScroll = readingScroll.scrollHeight - readingScroll.clientHeight;
+            if (maxScroll <= 0) {
+                progressFill.style.width = '0%';
+                return;
+            }
+            const progress = Math.min((readingScroll.scrollTop / maxScroll) * 100, 100);
+            progressFill.style.width = progress + '%';
+        }
+
+        // ============ 手动滚动检测 ============
+        function onUserScroll() {
+            if (!isPlaying) return;
+            userManuallyScrolled = true;
+            // 短暂延迟后暂停自动滚动，给用户手动浏览的空间
+            if (manualScrollTimeout) clearTimeout(manualScrollTimeout);
+            manualScrollTimeout = setTimeout(() => {
+                if (userManuallyScrolled && isPlaying) {
+                    stopAutoScroll();
+                }
+            }, 350);
+        }
+
+        // ============ 字号调节 ============
+        function updateFontSize(delta) {
+            currentFontSize = Math.max(14, Math.min(28, currentFontSize + delta));
+            document.documentElement.style.setProperty('--font-size', currentFontSize + 'px');
+            readingContent.style.fontSize = currentFontSize + 'px';
+            fsDisplay.textContent = currentFontSize + 'px';
+            // 更新进度（字号变化可能影响内容高度）
+            requestAnimationFrame(() => {
+                updateProgress();
+                // 如果正在自动滚动，短暂暂停让用户适应
+                if (isPlaying) {
+                    scrollAccumulator = 0;
+                    lastTimestamp = null;
+                }
+            });
+        }
+
+        // ============ 事件绑定 ============
+        btnConfirm.addEventListener('click', switchToReading);
+        btnBack.addEventListener('click', switchToInput);
+        btnPlay.addEventListener('click', toggleAutoScroll);
+        btnSample.addEventListener('click', () => {
+            textInput.value = sampleText;
+            textInput.focus();
+            // 高亮提示
+            textInput.style.borderColor = '#c4a882';
+            textInput.style.boxShadow = '0 0 0 4px rgba(180,150,110,0.1)';
+            setTimeout(() => {
+                textInput.style.borderColor = '#e8ddd0';
+                textInput.style.boxShadow = 'none';
+            }, 800);
+        });
+
+        // 速度滑块
+        speedSlider.addEventListener('input', () => {
+            scrollSpeed = parseInt(speedSlider.value);
+            speedDisplay.textContent = scrollSpeed + ' px/s';
+            scrollAccumulator = 0;
+            lastTimestamp = null;
+        });
+
+        // 字号按钮
+        btnFsMinus.addEventListener('click', () => updateFontSize(-1));
+        btnFsPlus.addEventListener('click', () => updateFontSize(1));
+
+        // 阅读区滚动事件（更新进度条 + 检测手动滚动）
+        readingScroll.addEventListener('scroll', () => {
+            updateProgress();
+            // 检测是否为程序触发的滚动（通过比较时间）
+            if (isPlaying && userManuallyScrolled === false) {
+                // 使用微小的阈值判断是否是自动滚动触发的
+                // 实际上这里简化处理：如果自动滚动中且用户触摸/滚轮，由其他事件处理
+            }
+        });
+
+        // 用户手动交互检测
+        readingScroll.addEventListener('wheel', (e) => {
+            if (isPlaying && Math.abs(e.deltaY) > 2) {
+                onUserScroll();
+            }
+        }, { passive: true });
+
+        readingScroll.addEventListener('touchstart', () => {
+            if (isPlaying) {
+                onUserScroll();
+            }
+        }, { passive: true });
+
+        readingScroll.addEventListener('touchmove', () => {
+            if (isPlaying && userManuallyScrolled) {
+                // 确认手动滚动意图
+                if (manualScrollTimeout) clearTimeout(manualScrollTimeout);
+                manualScrollTimeout = setTimeout(() => {
+                    if (userManuallyScrolled && isPlaying) {
+                        stopAutoScroll();
+                    }
+                }, 200);
+            }
+        }, { passive: true });
+
+        // 点击阅读内容区切换播放/暂停（不在控制栏上时）
+        readingScroll.addEventListener('click', (e) => {
+            // 如果点击的是阅读内容区（非控制栏区域）
+            if (!readingControls.contains(e.target) && e.target !== btnBack) {
+                // 双击切换，单击不做处理（避免误触）
+                // 实际上为了更好的体验，使用双击
+            }
+        });
+        readingScroll.addEventListener('dblclick', (e) => {
+            if (!readingControls.contains(e.target) && e.target !== btnBack) {
+                toggleAutoScroll();
+            }
+        });
+
+        // ============ 键盘快捷键 ============
+        document.addEventListener('keydown', (e) => {
+            // 在阅读模式下
+            if (readingView.classList.contains('active')) {
+                if (e.key === ' ' || e.code === 'Space') {
+                    e.preventDefault();
+                    toggleAutoScroll();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    switchToInput();
+                } else if (e.key === 'ArrowUp' && e.ctrlKey) {
+                    e.preventDefault();
+                    updateFontSize(1);
+                } else if (e.key === 'ArrowDown' && e.ctrlKey) {
+                    e.preventDefault();
+                    updateFontSize(-1);
+                } else if (e.key === 'ArrowRight' && e.shiftKey) {
+                    e.preventDefault();
+                    speedSlider.value = Math.min(75, scrollSpeed + 3);
+                    speedSlider.dispatchEvent(new Event('input'));
+                } else if (e.key === 'ArrowLeft' && e.shiftKey) {
+                    e.preventDefault();
+                    speedSlider.value = Math.max(8, scrollSpeed - 3);
+                    speedSlider.dispatchEvent(new Event('input'));
+                }
+            }
+            // 在输入模式下，Ctrl+Enter 确认
+            if (!readingView.classList.contains('active') && !inputView.classList.contains('hidden')) {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    switchToReading();
+                }
+            }
+        });
+
+        // ============ 窗口大小变化时更新进度 ============
+        let resizeDebounce;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeDebounce);
+            resizeDebounce = setTimeout(() => {
+                updateProgress();
+                if (isPlaying) {
+                    scrollAccumulator = 0;
+                    lastTimestamp = null;
+                }
+            }, 200);
+        });
+
+        // ============ 页面可见性变化处理 ============
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && isPlaying) {
+                // 页面隐藏时暂停时间追踪
+                lastTimestamp = null;
+                scrollAccumulator = 0;
+            }
+        });
+
+        // ============ 初始化 ============
+        function init() {
+            // 设置初始字号
+            document.documentElement.style.setProperty('--font-size', currentFontSize + 'px');
+            readingContent.style.fontSize = currentFontSize + 'px';
+            fsDisplay.textContent = currentFontSize + 'px';
+
+            // 设置初始速度显示
+            scrollSpeed = parseInt(speedSlider.value);
+            speedDisplay.textContent = scrollSpeed + ' px/s';
+
+            // 更新播放按钮状态
+            updatePlayButton();
+
+            // 尝试恢复上次的文本
+            try {
+                const saved = sessionStorage.getItem('quietread_text');
+                if (saved) {
+                    textInput.value = saved;
+                }
+            } catch (e) { /* 忽略 */ }
+
+            // 自动聚焦输入框
+            setTimeout(() => {
+                textInput.focus();
+            }, 300);
+
+            console.log('📖 静读 - 舒适阅读器已就绪');
+            console.log('  快捷键提示：');
+            console.log('  空格键 - 播放/暂停自动滚动');
+            console.log('  Esc - 返回输入界面');
+            console.log('  Ctrl+↑↓ - 调整字号');
+            console.log('  Shift+←→ - 调整滚动速度');
+            console.log('  双击阅读区 - 切换播放/暂停');
+            console.log('  Ctrl+Enter - 从输入框确认进入阅读');
+        }
+
+        init();
+
+        // ============ 添加shake动画 ============
+        const shakeStyle = document.createElement('style');
+        shakeStyle.textContent = `
+                    @keyframes shake {
+                        0%, 100% { transform: translateX(0); }
+                        15% { transform: translateX(-6px); }
+                        30% { transform: translateX(5px); }
+                        45% { transform: translateX(-4px); }
+                        60% { transform: translateX(3px); }
+                        75% { transform: translateX(-2px); }
+                        90% { transform: translateX(1px); }
+                    }
+                `;
+        document.head.appendChild(shakeStyle);
+    })();
+</script>
+</body>
+</html>
